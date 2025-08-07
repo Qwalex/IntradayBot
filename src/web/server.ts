@@ -28,6 +28,11 @@ export class WebApp {
         res.end(this.indexHtml());
         return;
       }
+      if (req.url === '/app.js') {
+        res.writeHead(200, { 'Content-Type': 'application/javascript; charset=utf-8' });
+        res.end(this.clientJs());
+        return;
+      }
       if (req.url === '/stats') {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(this.stats.snapshot()));
@@ -150,7 +155,14 @@ export class WebApp {
     <div class="log" id="log"></div>
   </main>
 
-  <script>
+  <script src="app.js"></script>
+  
+</body>
+</html>`;
+  }
+
+  private clientJs(): string {
+    return `(() => {
   const $ = (id) => document.getElementById(id);
   const statusEl = $('status');
   const logEl = $('log');
@@ -159,7 +171,6 @@ export class WebApp {
   const volumeEl = $('volume');
   const buyCountEl = $('buyCount');
   const sellCountEl = $('sellCount');
-  // Базовый путь (поддержка реверс-прокси под префиксом, например /intraday)
   const basePath = (location.pathname || '/').replace(/\/$/, '');
   let logBuffer = '';
 
@@ -181,12 +192,12 @@ export class WebApp {
 
   function renderStats(stats) {
     totalTradesEl.textContent = stats.totalTrades;
-    volumeEl.textContent = stats.volume.toFixed(6);
+    volumeEl.textContent = Number(stats.volume || 0).toFixed(6);
     buyCountEl.textContent = stats.buyCount;
     sellCountEl.textContent = stats.sellCount;
 
     tradesEl.innerHTML = '';
-    stats.lastTrades.forEach(t => {
+    (stats.lastTrades || []).forEach(t => {
       const tr = document.createElement('tr');
       const time = new Date(t.time).toLocaleTimeString();
       const sidePill = '<span class="pill ' + (t.side === 'Buy' ? 'buy' : 'sell') + '">' + t.side + '</span>';
@@ -206,12 +217,11 @@ export class WebApp {
         const msg = JSON.parse(ev.data);
         if (msg.type === 'stats') renderStats(msg.payload);
         if (msg.type === 'trade') {
-          // обновим таблицу и счётчики, запросив свежие stats
           fetch((basePath || '') + '/stats').then(r => r.json()).then(renderStats);
         }
         if (msg.type === 'logRaw') {
           logBuffer += String(msg.payload);
-          const parts = logBuffer.split(/\\r?\\n/);
+          const parts = logBuffer.split(/\r?\n/);
           logBuffer = parts.pop() || '';
           for (const line of parts) {
             if (!line.trim()) continue;
@@ -222,12 +232,9 @@ export class WebApp {
     };
   }
 
-  // Инициализация
-  fetch((basePath || '') + '/stats').then(r => r.json()).then(renderStats);
+  fetch((basePath || '') + '/stats').then(r => r.json()).then(renderStats).catch(() => {});
   connect();
-  </script>
-</body>
-</html>`;
+})();`;
   }
 
   private async sendLogTailToSocket(ws: WebSocket): Promise<void> {
