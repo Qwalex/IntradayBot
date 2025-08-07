@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "baseUrl": ".",
+    "paths": {
+      "@config/*": ["src/config/*"],
+      "@clients/*": ["src/clients/*"],
+      "@utils/*": ["src/utils/*"],
+      "@indicators/*": ["src/indicators/*"],
+      "@strategy/*": ["src/strategy/*"],
+      "@risk/*": ["src/risk/*"],
+      "@execution/*": ["src/execution/*"],
+      "@web/*": ["src/web/*"]
+    },
+    "outDir": "dist",
+    "resolveJsonModule": true
+  },
+  "include": ["src"]
+}
+
