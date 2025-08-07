@@ -46,6 +46,14 @@ export class WebApp {
       this.isHttps = false;
     }
 
+    // Доверяем заголовкам реверс-прокси для корректного протокола
+    this.server.on('request', (req: http.IncomingMessage, res: http.ServerResponse) => {
+      const xfProto = (req.headers['x-forwarded-proto'] || '').toString();
+      if (xfProto) {
+        this.isHttps = xfProto === 'https';
+      }
+    });
+
     // Инициализируем размер лог-файла
     try {
       const st = fs.statSync(env.logFile);
@@ -151,6 +159,8 @@ export class WebApp {
   const volumeEl = $('volume');
   const buyCountEl = $('buyCount');
   const sellCountEl = $('sellCount');
+  // Базовый путь (поддержка реверс-прокси под префиксом, например /intraday)
+  const basePath = (location.pathname || '/').replace(/\/$/, '');
   let logBuffer = '';
 
   function appendLog(row) {
@@ -187,7 +197,7 @@ export class WebApp {
 
   function connect() {
     const wsProto = (location.protocol === 'https:') ? 'wss://' : 'ws://';
-    const ws = new WebSocket(wsProto + location.host + '/ws');
+    const ws = new WebSocket(wsProto + location.host + (basePath || '') + '/ws');
     ws.onopen = () => { statusEl.textContent = 'Подключено'; };
     ws.onclose = () => { statusEl.textContent = 'Отключено. Переподключение…'; setTimeout(connect, 1500); };
     ws.onerror = () => { statusEl.textContent = 'Ошибка сокета'; };
@@ -197,7 +207,7 @@ export class WebApp {
         if (msg.type === 'stats') renderStats(msg.payload);
         if (msg.type === 'trade') {
           // обновим таблицу и счётчики, запросив свежие stats
-          fetch('/stats').then(r => r.json()).then(renderStats);
+          fetch((basePath || '') + '/stats').then(r => r.json()).then(renderStats);
         }
         if (msg.type === 'logRaw') {
           logBuffer += String(msg.payload);
@@ -213,7 +223,7 @@ export class WebApp {
   }
 
   // Инициализация
-  fetch('/stats').then(r => r.json()).then(renderStats);
+  fetch((basePath || '') + '/stats').then(r => r.json()).then(renderStats);
   connect();
   </script>
 </body>
