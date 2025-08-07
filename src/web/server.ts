@@ -221,7 +221,7 @@ export class WebApp {
         }
         if (msg.type === 'logRaw') {
           logBuffer += String(msg.payload);
-          const parts = logBuffer.split(/\r?\n/);
+          const parts = logBuffer.split(/\\r?\\n/);
           logBuffer = parts.pop() || '';
           for (const line of parts) {
             if (!line.trim()) continue;
