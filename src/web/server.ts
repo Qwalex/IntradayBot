@@ -171,7 +171,7 @@ export class WebApp {
   const volumeEl = $('volume');
   const buyCountEl = $('buyCount');
   const sellCountEl = $('sellCount');
-  const basePath = (location.pathname || '/').replace(/\/$/, '');
+  const basePath = (location.pathname || '/').replace(/\\/$/, '');
   let logBuffer = '';
 
   function appendLog(row) {
